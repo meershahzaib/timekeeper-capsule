@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, LayoutDashboard, Box, Medal } from "lucide-react";
+import { toast } from "sonner";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
@@ -25,7 +26,12 @@ export function UserMenu() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+      toast.success("Signed out successfully");
+    } catch (error) {
+      toast.error("Error signing out");
+    }
   };
 
   return (
@@ -46,8 +52,26 @@ export function UserMenu() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/dashboard" className="cursor-pointer flex items-center">
-                <User className="mr-2 h-4 w-4" />
+                <LayoutDashboard className="mr-2 h-4 w-4" />
                 <span>Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/my-capsules" className="cursor-pointer flex items-center">
+                <Box className="mr-2 h-4 w-4" />
+                <span>My Capsules</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/profile" className="cursor-pointer flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/rewards" className="cursor-pointer flex items-center">
+                <Medal className="mr-2 h-4 w-4" />
+                <span>Rewards</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>

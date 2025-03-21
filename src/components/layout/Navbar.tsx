@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import Logo from '@/assets/logo';
 import { Menu, X, ChevronLeft } from 'lucide-react';
@@ -15,6 +15,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -30,6 +31,12 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Close mobile menu when route changes
+    setIsMobileMenuOpen(false);
+    document.body.style.overflow = 'auto';
+  }, [location.pathname]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -57,17 +64,16 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
         <nav className="hidden md:flex items-center space-x-8">
           {!user ? (
             <>
-              <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">How it Works</a>
-              <a href="#faq" className="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+              <a href="/#features" className="text-sm font-medium hover:text-primary transition-colors">Features</a>
+              <a href="/#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">How it Works</a>
+              <a href="/#faq" className="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
             </>
           ) : (
             <>
-              <Link to="/dashboard" className="text-sm font-medium hover:text-primary transition-colors">Dashboard</Link>
-              <Link to="/create-capsule" className="text-sm font-medium hover:text-primary transition-colors">Create Capsule</Link>
-              <Link to="/my-capsules" className="text-sm font-medium hover:text-primary transition-colors">My Capsules</Link>
-              <Link to="/profile" className="text-sm font-medium hover:text-primary transition-colors">Profile</Link>
-              <Link to="/rewards" className="text-sm font-medium hover:text-primary transition-colors">Rewards</Link>
+              <Link to="/dashboard" className={cn("text-sm font-medium hover:text-primary transition-colors", location.pathname === "/dashboard" && "text-primary")}>Dashboard</Link>
+              <Link to="/create-capsule" className={cn("text-sm font-medium hover:text-primary transition-colors", location.pathname === "/create-capsule" && "text-primary")}>Create Capsule</Link>
+              <Link to="/my-capsules" className={cn("text-sm font-medium hover:text-primary transition-colors", location.pathname === "/my-capsules" && "text-primary")}>My Capsules</Link>
+              <Link to="/rewards" className={cn("text-sm font-medium hover:text-primary transition-colors", location.pathname === "/rewards" && "text-primary")}>Rewards</Link>
             </>
           )}
           <UserMenu />
@@ -112,21 +118,21 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
           {!user ? (
             <>
               <a 
-                href="#features" 
+                href="/#features" 
                 className="text-lg font-medium py-2 border-b border-muted"
                 onClick={toggleMobileMenu}
               >
                 Features
               </a>
               <a 
-                href="#how-it-works" 
+                href="/#how-it-works" 
                 className="text-lg font-medium py-2 border-b border-muted"
                 onClick={toggleMobileMenu}
               >
                 How it Works
               </a>
               <a 
-                href="#faq" 
+                href="/#faq" 
                 className="text-lg font-medium py-2 border-b border-muted"
                 onClick={toggleMobileMenu}
               >
@@ -169,6 +175,13 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
                 onClick={toggleMobileMenu}
               >
                 Rewards
+              </Link>
+              <Link 
+                to="/settings" 
+                className="text-lg font-medium py-2 border-b border-muted"
+                onClick={toggleMobileMenu}
+              >
+                Settings
               </Link>
             </>
           )}
