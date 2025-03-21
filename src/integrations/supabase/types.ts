@@ -9,7 +9,101 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      capsule_contents: {
+        Row: {
+          capsule_id: string
+          content_text: string | null
+          content_type: string
+          content_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          capsule_id: string
+          content_text?: string | null
+          content_type: string
+          content_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          capsule_id?: string
+          content_text?: string | null
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capsule_contents_capsule_id_fkey"
+            columns: ["capsule_id"]
+            isOneToOne: false
+            referencedRelation: "time_capsules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      time_capsules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_private: boolean | null
+          scheduled_open_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          scheduled_open_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          scheduled_open_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

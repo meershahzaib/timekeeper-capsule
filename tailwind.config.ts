@@ -25,8 +25,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['Inter var', 'sans-serif'],
-				display: ['Inter var', 'sans-serif'],
+				sans: ['Comfortaa', 'sans-serif'],
+				display: ['Comfortaa', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
