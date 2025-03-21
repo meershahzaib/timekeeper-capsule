@@ -10,6 +10,9 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import CreateCapsule from "./pages/CreateCapsule";
 import NotFound from "./pages/NotFound";
 
+// Add global font style
+import "./fonts.css";
+
 const queryClient = new QueryClient();
 
 const App = () => (

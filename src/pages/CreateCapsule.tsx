@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -14,11 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { TimeCapsuleUploader } from "@/components/capsule/TimeCapsuleUploader";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, FileText, Image as ImageIcon, Video } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -277,7 +275,7 @@ export default function CreateCapsule() {
                     <ul className="space-y-2">
                       {contentFiles.map((file, index) => (
                         <li key={index} className="flex items-center gap-2 text-sm">
-                          {file.type === 'image' && <Image className="h-4 w-4" />}
+                          {file.type === 'image' && <ImageIcon className="h-4 w-4" />}
                           {file.type === 'video' && <Video className="h-4 w-4" />}
                           {file.type === 'document' && <FileText className="h-4 w-4" />}
                           <span className="truncate">{new URL(file.url).pathname.split('/').pop()}</span>
