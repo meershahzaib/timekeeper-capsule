@@ -8,6 +8,9 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Dashboard";
 import CreateCapsule from "./pages/CreateCapsule";
+import MyCapsulesPage from "./pages/MyCapsulesPage";
+import ProfilePage from "./pages/ProfilePage";
+import RewardsPage from "./pages/RewardsPage";
 import NotFound from "./pages/NotFound";
 
 // Add global font style
@@ -26,6 +29,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-capsule" element={<CreateCapsule />} />
+            <Route path="/my-capsules" element={<MyCapsulesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/rewards" element={<RewardsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

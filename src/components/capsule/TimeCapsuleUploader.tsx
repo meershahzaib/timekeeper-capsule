@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,14 +44,13 @@ export function TimeCapsuleUploader({ capsuleId, onUploadComplete }: FileUploadP
 
     try {
       setUploading(true);
-      setProgress(0);
+      setProgress(10);
       
       // Create a unique file path
       const fileExt = file.name.split('.').pop();
       const filePath = `${capsuleId}/${Date.now()}.${fileExt}`;
       const contentType = getFileType(file.type);
       
-      // Modified: Removed onUploadProgress as it's not supported in the type
       const { error: storageError } = await supabase
         .storage
         .from('capsule-contents')
@@ -63,7 +63,7 @@ export function TimeCapsuleUploader({ capsuleId, onUploadComplete }: FileUploadP
         throw storageError;
       }
 
-      // Set progress to complete since we can't track it
+      // Set progress to complete
       setProgress(100);
 
       // Get the public URL
