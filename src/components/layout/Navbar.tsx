@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
 import Logo from '@/assets/logo';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserMenu } from '@/components/layout/UserMenu';
 
 interface NavbarProps {
   className?: string;
@@ -51,26 +53,24 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
           <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">Features</a>
           <a href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">How it Works</a>
           <a href="#faq" className="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
-          <AnimatedButton 
-            size="sm" 
-            className="bg-gradient-to-r from-time-blue to-time-purple hover:from-time-blue/90 hover:to-time-purple/90"
-          >
-            Create a Time Capsule
-          </AnimatedButton>
+          <UserMenu />
         </nav>
 
         {/* Mobile Menu Button */}
-        <button 
-          className="md:hidden flex items-center justify-center" 
-          onClick={toggleMobileMenu}
-          aria-label="Toggle menu"
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </button>
+        <div className="md:hidden flex items-center space-x-4">
+          <UserMenu />
+          <button 
+            className="flex items-center justify-center" 
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
@@ -27,8 +27,19 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-8">Your Time Capsules</h1>
+    <div className="container max-w-6xl py-24 px-4 sm:px-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Your Time Capsules</h1>
+          <p className="text-muted-foreground mt-1">Preserve memories for your future self</p>
+        </div>
+        <Button 
+          onClick={() => navigate("/create-capsule")}
+          className="bg-gradient-to-r from-time-blue to-time-purple hover:from-time-blue/90 hover:to-time-purple/90 flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" /> Create New Capsule
+        </Button>
+      </header>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
