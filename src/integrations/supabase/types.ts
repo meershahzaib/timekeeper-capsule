@@ -139,27 +139,33 @@ export type Database = {
       }
       user_stats: {
         Row: {
+          accumulated_fil: number | null
           capsules_created: number
           days_preserved: number
           id: string
+          last_accumulation_time: string | null
           last_updated: string
           memories_stored: number
           total_points: number
           user_id: string
         }
         Insert: {
+          accumulated_fil?: number | null
           capsules_created?: number
           days_preserved?: number
           id?: string
+          last_accumulation_time?: string | null
           last_updated?: string
           memories_stored?: number
           total_points?: number
           user_id: string
         }
         Update: {
+          accumulated_fil?: number | null
           capsules_created?: number
           days_preserved?: number
           id?: string
+          last_accumulation_time?: string | null
           last_updated?: string
           memories_stored?: number
           total_points?: number
