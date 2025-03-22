@@ -7,6 +7,7 @@ import { Menu, X, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 
 interface NavbarProps {
   className?: string;
@@ -14,6 +15,7 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ className }) => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -47,11 +49,17 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
     }
   };
 
+  const isDark = theme === 'dark';
+
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4",
-        isScrolled ? "bg-white/80 backdrop-blur-md shadow-subtle" : "bg-transparent",
+        isScrolled 
+          ? isDark 
+            ? "bg-background/80 backdrop-blur-md border-b border-border" 
+            : "bg-white/80 backdrop-blur-md shadow-subtle"
+          : "bg-transparent",
         className
       )}
     >
@@ -99,7 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
       {/* Mobile Navigation */}
       <div 
         className={cn(
-          "fixed inset-0 bg-white z-40 transform transition-transform duration-300 ease-in-out pt-20",
+          "fixed inset-0 bg-background z-40 transform transition-transform duration-300 ease-in-out pt-20",
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full",
           "md:hidden"
         )}
@@ -107,7 +115,7 @@ const Navbar: React.FC<NavbarProps> = ({ className }) => {
         <div className="absolute top-4 right-4">
           <button
             onClick={toggleMobileMenu}
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-muted"
             aria-label="Close menu"
           >
             <ChevronLeft className="h-6 w-6" />

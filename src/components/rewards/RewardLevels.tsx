@@ -2,20 +2,22 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Star } from "lucide-react";
+import { Trophy, Star, Medal, Award, Diamond, Crown } from "lucide-react";
+import { RewardLevel } from "@/types/rewards";
 
 interface RewardLevelsProps {
   totalPoints: number;
 }
 
 export function RewardLevels({ totalPoints }: RewardLevelsProps) {
-  // Define reward levels
-  const levels = [
-    { name: "Bronze", threshold: 100, multiplier: 1.1 },
-    { name: "Silver", threshold: 300, multiplier: 1.2 },
-    { name: "Gold", threshold: 500, multiplier: 1.3 },
-    { name: "Platinum", threshold: 800, multiplier: 1.5 },
-    { name: "Diamond", threshold: 1200, multiplier: 2.0 },
+  // Define reward levels with icons
+  const levels: RewardLevel[] = [
+    { name: "Bronze", threshold: 500, multiplier: 1.1, icon: Medal },
+    { name: "Silver", threshold: 1000, multiplier: 1.2, icon: Star },
+    { name: "Gold", threshold: 1500, multiplier: 1.3, icon: Trophy },
+    { name: "Platinum", threshold: 2500, multiplier: 1.5, icon: Award },
+    { name: "Diamond", threshold: 3500, multiplier: 2.0, icon: Diamond },
+    { name: "Master", threshold: 5000, multiplier: 2.5, icon: Crown },
   ];
 
   // Find current level
@@ -36,6 +38,7 @@ export function RewardLevels({ totalPoints }: RewardLevelsProps) {
 
   // Get current multiplier
   const currentMultiplier = currentLevel >= 0 ? levels[currentLevel].multiplier : 1.0;
+  const CurrentLevelIcon = currentLevel >= 0 ? levels[currentLevel].icon : Star;
 
   return (
     <Card>
@@ -51,7 +54,7 @@ export function RewardLevels({ totalPoints }: RewardLevelsProps) {
       <CardContent className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 p-3 rounded-full">
-            <Star className="h-6 w-6 text-primary" />
+            <CurrentLevelIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1">
             <div className="flex justify-between mb-1">
@@ -78,20 +81,23 @@ export function RewardLevels({ totalPoints }: RewardLevelsProps) {
         <div className="space-y-2">
           <h4 className="text-sm font-medium mb-2">All Reward Levels</h4>
           <div className="grid gap-2">
-            {levels.map((level, index) => (
-              <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <div className={`h-3 w-3 rounded-full ${totalPoints >= level.threshold ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
-                  <span className={totalPoints >= level.threshold ? 'font-medium' : 'text-muted-foreground'}>
-                    {level.name}
-                  </span>
+            {levels.map((level, index) => {
+              const LevelIcon = level.icon;
+              return (
+                <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <LevelIcon className={`h-4 w-4 ${totalPoints >= level.threshold ? 'text-primary' : 'text-muted-foreground/30'}`} />
+                    <span className={totalPoints >= level.threshold ? 'font-medium' : 'text-muted-foreground'}>
+                      {level.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{level.multiplier.toFixed(1)}x</span>
+                    <span className="text-xs text-muted-foreground">{level.threshold}+ points</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{level.multiplier.toFixed(1)}x</span>
-                  <span className="text-xs text-muted-foreground">{level.threshold}+ points</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardContent>
@@ -101,10 +107,11 @@ export function RewardLevels({ totalPoints }: RewardLevelsProps) {
 
 // Helper function to get the reward multiplier based on points
 export function getRewardMultiplier(totalPoints: number): number {
-  if (totalPoints >= 1200) return 2.0; // Diamond
-  if (totalPoints >= 800) return 1.5;  // Platinum
-  if (totalPoints >= 500) return 1.3;  // Gold
-  if (totalPoints >= 300) return 1.2;  // Silver
-  if (totalPoints >= 100) return 1.1;  // Bronze
+  if (totalPoints >= 5000) return 2.5; // Master
+  if (totalPoints >= 3500) return 2.0; // Diamond
+  if (totalPoints >= 2500) return 1.5; // Platinum
+  if (totalPoints >= 1500) return 1.3; // Gold
+  if (totalPoints >= 1000) return 1.2; // Silver
+  if (totalPoints >= 500) return 1.1;  // Bronze
   return 1.0; // Base multiplier
 }

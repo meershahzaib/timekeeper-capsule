@@ -5,12 +5,31 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Reward } from "@/types/rewards";
+import { toast } from "sonner";
 
 interface RewardsListProps {
   rewards: Reward[];
+  onClaimReward: (reward: Reward) => Promise<void>;
 }
 
-export function RewardsList({ rewards }: RewardsListProps) {
+export function RewardsList({ rewards, onClaimReward }: RewardsListProps) {
+  const [claimingId, setClaimingId] = React.useState<string | null>(null);
+
+  const handleClaim = async (reward: Reward) => {
+    if (!reward.claimable) return;
+    
+    setClaimingId(reward.achievement_type);
+    try {
+      await onClaimReward(reward);
+      toast.success(`Claimed ${reward.points} points!`);
+    } catch (error) {
+      console.error("Error claiming reward:", error);
+      toast.error("Failed to claim reward");
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {rewards.map((reward, index) => (
@@ -44,14 +63,33 @@ export function RewardsList({ rewards }: RewardsListProps) {
                   value={((reward.progress || 0) / reward.maxProgress) * 100} 
                   className="h-2" 
                 />
+                {reward.claimable && !reward.claimed && (
+                  <Button 
+                    variant="default"
+                    className="w-full mt-2" 
+                    onClick={() => handleClaim(reward)}
+                    disabled={claimingId === reward.achievement_type}
+                  >
+                    {claimingId === reward.achievement_type ? "Claiming..." : "Claim Reward"}
+                  </Button>
+                )}
               </div>
             ) : (
               <Button 
-                variant={reward.claimed ? "default" : "outline"} 
+                variant={reward.claimed ? "default" : (reward.claimable ? "default" : "outline")}
                 className="w-full" 
-                disabled={true}
+                disabled={reward.claimed || !reward.claimable}
+                onClick={() => handleClaim(reward)}
               >
-                {reward.claimed ? "Claimed" : "Not Started"}
+                {claimingId === reward.achievement_type ? (
+                  "Claiming..."
+                ) : reward.claimed ? (
+                  "Claimed"
+                ) : reward.claimable ? (
+                  "Claim Reward"
+                ) : (
+                  "Not Started"
+                )}
               </Button>
             )}
           </CardContent>
