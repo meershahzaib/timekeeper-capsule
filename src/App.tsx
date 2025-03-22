@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Dashboard";
 import CreateCapsule from "./pages/CreateCapsule";
@@ -17,38 +18,47 @@ import NotFound from "./pages/NotFound";
 // Add global font style
 import "./fonts.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner 
-          position="top-right" 
-          closeButton 
-          richColors 
-          expand={true}
-          theme="system"
-          toastOptions={{
-            duration: 4000,
-            className: "my-toast-class",
-          }}
-        />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/create-capsule" element={<CreateCapsule />} />
-            <Route path="/my-capsules" element={<MyCapsulesPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/rewards" element={<RewardsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner 
+            position="top-right" 
+            closeButton 
+            richColors 
+            expand={true}
+            theme="system"
+            toastOptions={{
+              duration: 4000,
+              className: "my-toast-class",
+            }}
+          />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/create-capsule" element={<CreateCapsule />} />
+              <Route path="/my-capsules" element={<MyCapsulesPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/rewards" element={<RewardsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Mail, Lock, CheckCircle2 } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters" })
@@ -29,6 +29,7 @@ interface SignupFormProps {
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -42,9 +43,14 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       await signUp(values.email, values.password, values.username);
       if (onSuccess) onSuccess();
+    } catch (err) {
+      setError("Failed to create account. This email might already be in use.");
+      console.error("Signup error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +59,12 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && (
+          <div className="p-3 text-sm rounded-md bg-destructive/10 text-destructive">
+            {error}
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="username"
@@ -60,7 +72,14 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="username" {...field} />
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="username" 
+                    className="pl-10" 
+                    {...field}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,7 +93,14 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="your@email.com" {...field} />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="your@email.com" 
+                    className="pl-10" 
+                    {...field} 
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,7 +114,15 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="pl-10" 
+                    {...field} 
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -102,14 +136,27 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <CheckCircle2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="pl-10" 
+                    {...field} 
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading}
+          size="lg"
+        >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...

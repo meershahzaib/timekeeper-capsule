@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
-import { Loader2, Shield, Bell, Eye, Moon, User, Mail } from "lucide-react";
+import { Loader2, Shield, Bell, User, Mail } from "lucide-react";
+import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -23,11 +24,6 @@ export default function SettingsPage() {
       marketing: false,
       socialUpdates: true,
       securityAlerts: true
-    },
-    appearance: {
-      darkMode: false,
-      highContrast: false,
-      reducedMotion: false
     },
     privacy: {
       publicProfile: true,
@@ -70,10 +66,18 @@ export default function SettingsPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar />
-      <div className="container max-w-6xl py-24 px-4 sm:px-6">
+      <div className="container max-w-6xl py-16 sm:py-24 px-4 sm:px-6">
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Account Settings</h1>
@@ -221,70 +225,10 @@ export default function SettingsPage() {
             </TabsContent>
             
             <TabsContent value="appearance" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Appearance
-                  </CardTitle>
-                  <CardDescription>
-                    Customize how TimeSeal looks for you
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Dark Mode</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Switch to a darker color scheme
-                        </p>
-                      </div>
-                      <Switch 
-                        checked={settings.appearance.darkMode} 
-                        onCheckedChange={() => handleToggleSetting('appearance', 'darkMode')}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">High Contrast</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Increase contrast for better visibility
-                        </p>
-                      </div>
-                      <Switch 
-                        checked={settings.appearance.highContrast} 
-                        onCheckedChange={() => handleToggleSetting('appearance', 'highContrast')}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Reduced Motion</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Minimize animations throughout the application
-                        </p>
-                      </div>
-                      <Switch 
-                        checked={settings.appearance.reducedMotion} 
-                        onCheckedChange={() => handleToggleSetting('appearance', 'reducedMotion')}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleSaveSettings} disabled={isUpdating}>
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                      </>
-                    ) : (
-                      "Save changes"
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
+              <AppearanceSettings 
+                onSave={handleSaveSettings} 
+                isSaving={isUpdating} 
+              />
             </TabsContent>
             
             <TabsContent value="privacy" className="space-y-6">

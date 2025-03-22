@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -23,6 +23,7 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -34,9 +35,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       await signIn(values.email, values.password);
       if (onSuccess) onSuccess();
+    } catch (err) {
+      setError("Failed to sign in. Please check your credentials.");
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -45,6 +51,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && (
+          <div className="p-3 text-sm rounded-md bg-destructive/10 text-destructive">
+            {error}
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="email"
@@ -52,7 +64,14 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="your@email.com" {...field} />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="your@email.com" 
+                    className="pl-10" 
+                    {...field} 
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -66,14 +85,27 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="pl-10"
+                    {...field} 
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          className="w-full transition-all" 
+          disabled={isLoading}
+          size="lg"
+        >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
