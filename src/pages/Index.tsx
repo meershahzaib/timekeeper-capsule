@@ -9,11 +9,15 @@ import FAQ from '@/components/home/FAQ';
 import TimeCapsuleCreator from '@/components/ui/TimeCapsuleCreator';
 import { Transition } from '@/components/ui/Transition';
 import { AnimatedButton } from '@/components/ui/AnimatedButton';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Navbar />
+      
+      {/* Floating Theme Toggle */}
+      <ThemeToggle variant="floating" />
       
       <main>
         <Hero />

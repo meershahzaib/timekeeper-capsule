@@ -11,14 +11,57 @@ import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CapsuleDetailDialog } from "@/components/capsule/CapsuleDetailDialog";
+import { useQuery } from "@tanstack/react-query";
+
+type Capsule = {
+  id: string;
+  title: string;
+  description: string;
+  scheduled_open_date: string;
+  is_private: boolean;
+  created_at: string;
+  status: 'active' | 'unlocked';
+  contentCount: number;
+  capsule_contents?: any[];
+};
 
 export default function MyCapsulesPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("all");
-  const [capsules, setCapsules] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [capsules, setCapsules] = useState<Capsule[]>([]);
+  const [selectedCapsule, setSelectedCapsule] = useState<Capsule | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Use React Query to prevent infinite loading issues
+  const { isLoading, error } = useQuery({
+    queryKey: ['capsules', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      const { data, error } = await supabase
+        .from('time_capsules')
+        .select('*, capsule_contents(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Add a status property based on the scheduled_open_date
+      const processedCapsules = data.map(capsule => ({
+        ...capsule,
+        status: new Date(capsule.scheduled_open_date) <= new Date() ? 'unlocked' : 'active',
+        contentCount: capsule.capsule_contents ? capsule.capsule_contents.length : 0
+      })) as Capsule[];
+      
+      setCapsules(processedCapsules);
+      return processedCapsules;
+    },
+    staleTime: 30000, // 30 seconds
+    retry: 1
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,34 +72,6 @@ export default function MyCapsulesPage() {
 
   useEffect(() => {
     if (!user) return;
-
-    const fetchCapsules = async () => {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('time_capsules')
-        .select('*, capsule_contents(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching capsules:', error);
-        toast.error("Failed to load your capsules");
-      } else {
-        // Add a status property based on the scheduled_open_date
-        const processedCapsules = data.map(capsule => ({
-          ...capsule,
-          status: new Date(capsule.scheduled_open_date) <= new Date() ? 'unlocked' : 'active',
-          contentCount: capsule.capsule_contents ? capsule.capsule_contents.length : 0
-        }));
-        
-        setCapsules(processedCapsules);
-      }
-      
-      setIsLoading(false);
-    };
-
-    fetchCapsules();
 
     // Subscribe to realtime updates for capsules
     const capsulesChannel = supabase
@@ -77,7 +92,7 @@ export default function MyCapsulesPage() {
                     ...data,
                     status: new Date(data.scheduled_open_date) <= new Date() ? 'unlocked' : 'active',
                     contentCount: data.capsule_contents ? data.capsule_contents.length : 0
-                  };
+                  } as Capsule;
                   
                   setCapsules(prevCapsules => [newCapsule, ...prevCapsules]);
                 }
@@ -136,6 +151,11 @@ export default function MyCapsulesPage() {
     );
   }
 
+  if (error) {
+    console.error("Error loading capsules:", error);
+    toast.error("There was an error loading your capsules. Please try again later.");
+  }
+
   if (!user) return null;
 
   const filteredCapsules = activeTab === "all" 
@@ -146,12 +166,17 @@ export default function MyCapsulesPage() {
     navigate("/create-capsule");
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleViewDetails = (capsule: Capsule) => {
+    setSelectedCapsule(capsule);
+    setDialogOpen(true);
   };
 
   return (
@@ -216,7 +241,13 @@ export default function MyCapsulesPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-muted/10 px-6 py-4">
-                      <Button variant="outline" className="w-full">View Details</Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleViewDetails(capsule)}
+                      >
+                        View Details
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}
@@ -331,6 +362,12 @@ export default function MyCapsulesPage() {
             )}
           </TabsContent>
         </Tabs>
+        
+        <CapsuleDetailDialog 
+          capsule={selectedCapsule}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+        />
       </div>
       <Footer />
     </>

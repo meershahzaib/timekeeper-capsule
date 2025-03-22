@@ -18,11 +18,13 @@ import NotFound from "./pages/NotFound";
 // Add global font style
 import "./fonts.css";
 
+// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 60000, // 1 minute
     },
   },
 });

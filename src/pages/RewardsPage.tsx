@@ -4,27 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Loader2, Medal, Trophy, Gift, Star, Clock, Award, Check } from "lucide-react";
+import { Loader2, Medal } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Reward, UserStats } from "@/types/rewards";
+import { Star, Trophy, Gift, Clock, Award } from "lucide-react";
+import { RewardsList } from "@/components/rewards/RewardsList";
+import { WalletCard } from "@/components/rewards/WalletCard";
+import { RewardLevels, getRewardMultiplier } from "@/components/rewards/RewardLevels";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-// Define a type for our rewards to ensure consistency
-type Reward = {
-  title: string;
-  description: string;
-  icon: React.ForwardRefExoticComponent<any>;
-  reward: string;
-  achievement_type: string;
-  points: number;
-  claimed: boolean;
-  progress?: number;
-  maxProgress?: number;
-};
-
+// Define default rewards
 const defaultRewards: Reward[] = [
   {
     title: "First Capsule Created",
@@ -70,14 +63,6 @@ const defaultRewards: Reward[] = [
   },
 ];
 
-// Define a type for user stats
-type UserStats = {
-  total_points: number;
-  capsules_created: number;
-  memories_stored: number;
-  days_preserved: number;
-};
-
 export default function RewardsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -89,26 +74,21 @@ export default function RewardsPage() {
     memories_stored: 0,
     days_preserved: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/");
-      toast.error("You must be signed in to view this page");
-    }
-  }, [user, loading, navigate]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchData = async () => {
-      setIsLoading(true);
+  // Use React Query for data fetching to prevent infinite loading
+  const { isLoading, error } = useQuery({
+    queryKey: ['rewards', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
       
       // Fetch achievements
       const { data: achievementsData, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
         .eq('user_id', user.id);
+
+      if (achievementsError) throw achievementsError;
 
       // Fetch user stats
       const { data: statsData, error: statsError } = await supabase
@@ -169,39 +149,22 @@ export default function RewardsPage() {
         
         setRewards(updatedRewards);
       }
-      
-      setIsLoading(false);
-    };
 
-    fetchData();
+      return { achievementsData, statsData };
+    },
+    staleTime: 30000, // 30 seconds
+    retry: 1
+  });
 
-    // Check for achievement completion when stats change
-    const checkAchievements = async (stats: UserStats) => {
-      // First capsule created
-      if (stats.capsules_created > 0) {
-        const firstReward = rewards.find(r => r.achievement_type === 'first_capsule');
-        if (firstReward && !firstReward.claimed) {
-          await awardAchievement('first_capsule', firstReward);
-        }
-      }
-      
-      // Memory keeper (10 memories stored)
-      if (stats.memories_stored >= 10) {
-        const memoryReward = rewards.find(r => r.achievement_type === 'memory_keeper');
-        if (memoryReward && !memoryReward.claimed) {
-          await awardAchievement('memory_keeper', memoryReward);
-        }
-      }
-      
-      // Time traveler (5 years)
-      const yearsPreserved = Math.floor(stats.days_preserved / 365);
-      if (yearsPreserved >= 5) {
-        const timeReward = rewards.find(r => r.achievement_type === 'time_traveler');
-        if (timeReward && !timeReward.claimed) {
-          await awardAchievement('time_traveler', timeReward);
-        }
-      }
-    };
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/");
+      toast.error("You must be signed in to view this page");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
 
     // Subscribe to realtime updates for user stats
     const statsChannel = supabase
@@ -209,14 +172,17 @@ export default function RewardsPage() {
       .on('postgres_changes', 
         { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          const newStats: UserStats = {
+          if (!payload.new) return;
+          
+          setUserStats({
             total_points: payload.new.total_points || 0,
             capsules_created: payload.new.capsules_created || 0,
             memories_stored: payload.new.memories_stored || 0,
             days_preserved: payload.new.days_preserved || 0
-          };
-          setUserStats(newStats);
-          checkAchievements(newStats);
+          });
+          
+          // Invalidate query to refetch data
+          queryClient.invalidateQueries({ queryKey: ['rewards', user.id] });
         }
       )
       .subscribe();
@@ -227,12 +193,17 @@ export default function RewardsPage() {
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'achievements', filter: `user_id=eq.${user.id}` },
         (payload) => {
+          if (!payload.new) return;
+          
           // Update the reward with the matching achievement type
           setRewards(prevRewards => prevRewards.map(reward => 
             reward.achievement_type === payload.new.achievement_type
               ? { ...reward, claimed: true, progress: reward.maxProgress || 1 }
               : reward
           ));
+          
+          // Invalidate query to refetch data
+          queryClient.invalidateQueries({ queryKey: ['rewards', user.id] });
         }
       )
       .subscribe();
@@ -241,7 +212,7 @@ export default function RewardsPage() {
       supabase.removeChannel(statsChannel);
       supabase.removeChannel(achievementsChannel);
     };
-  }, [user, rewards]);
+  }, [user, queryClient]);
 
   const awardAchievement = async (achievementType: string, reward: Reward) => {
     if (!user) return;
@@ -288,8 +259,14 @@ export default function RewardsPage() {
     );
   }
 
+  if (error) {
+    console.error("Error loading rewards:", error);
+    toast.error("There was an error loading your rewards. Please try again later.");
+  }
+
   if (!user) return null;
 
+  const rewardMultiplier = getRewardMultiplier(userStats.total_points);
   const levelProgress = (userStats.total_points / 1000) * 100;
 
   return (
@@ -306,81 +283,49 @@ export default function RewardsPage() {
           </p>
         </header>
         
-        <div className="grid grid-cols-1 gap-6 mb-12">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Progress</CardTitle>
-              <CardDescription>Track your achievements and points</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="flex flex-col items-center bg-muted/20 p-6 rounded-xl w-full md:w-auto">
-                  <span className="text-4xl font-bold mb-2">{userStats.total_points}</span>
-                  <span className="text-sm text-muted-foreground">Total Points</span>
-                </div>
-                
-                <div className="w-full">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Level Progress</span>
-                    <span className="text-sm text-muted-foreground">{userStats.total_points}/1000 XP</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Progress</CardTitle>
+                <CardDescription>Track your achievements and points</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                  <div className="flex flex-col items-center bg-muted/20 p-6 rounded-xl w-full md:w-auto">
+                    <span className="text-4xl font-bold mb-2">{userStats.total_points}</span>
+                    <span className="text-sm text-muted-foreground">Total Points</span>
                   </div>
-                  <Progress value={levelProgress} className="h-2 mb-4" />
-                  <p className="text-sm text-muted-foreground">
-                    Complete achievements below to earn points and level up
-                  </p>
+                  
+                  <div className="w-full">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Level Progress</span>
+                      <span className="text-sm text-muted-foreground">{userStats.total_points}/1000 XP</span>
+                    </div>
+                    <Progress value={levelProgress} className="h-2 mb-4" />
+                    <p className="text-sm text-muted-foreground">
+                      Complete achievements below to earn points and level up
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="md:row-span-2">
+            <WalletCard 
+              rewardPoints={userStats.total_points} 
+              rewardMultiplier={rewardMultiplier}
+            />
+          </div>
+          
+          <div className="md:col-span-2">
+            <RewardLevels totalPoints={userStats.total_points} />
+          </div>
         </div>
         
         <h2 className="text-xl font-semibold mb-6">Available Achievements</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {rewards.map((reward, index) => (
-            <Card key={index} className="overflow-hidden">
-              <CardHeader className="bg-muted/20">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${reward.claimed ? 'bg-primary/20' : 'bg-primary/10'}`}>
-                      {reward.claimed ? (
-                        <Check className="h-6 w-6 text-primary" />
-                      ) : (
-                        <reward.icon className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                    <CardTitle className="text-lg">{reward.title}</CardTitle>
-                  </div>
-                  <div className="text-sm font-medium text-primary">
-                    {reward.reward}
-                  </div>
-                </div>
-                <CardDescription>{reward.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {reward.maxProgress ? (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span>{reward.progress}/{reward.maxProgress}</span>
-                    </div>
-                    <Progress 
-                      value={(reward.progress || 0) / reward.maxProgress * 100} 
-                      className="h-2" 
-                    />
-                  </div>
-                ) : (
-                  <Button 
-                    variant={reward.claimed ? "default" : "outline"} 
-                    className="w-full" 
-                    disabled={true}
-                  >
-                    {reward.claimed ? "Claimed" : "Not Started"}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <RewardsList rewards={rewards} />
       </div>
       <Footer />
     </>
