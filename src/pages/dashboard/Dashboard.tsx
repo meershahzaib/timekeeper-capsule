@@ -5,25 +5,48 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, LayoutDashboard, Box, Clock, LineChart, Plus, FileText, Award } from "lucide-react";
+import { Loader2, LayoutDashboard, Box, Clock, LineChart, Plus, FileText, Award, User } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Define types for better type safety
+type UserStats = {
+  capsules_created: number;
+  memories_stored: number;
+  days_preserved: number;
+  total_points: number;
+};
+
+type Capsule = {
+  id: string;
+  title: string;
+  created_at: string;
+  [key: string]: any;
+};
+
+type Achievement = {
+  id: string;
+  achievement_name: string;
+  points: number;
+  earned_at: string;
+  [key: string]: any;
+};
+
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [capsules, setCapsules] = useState([]);
-  const [userStats, setUserStats] = useState({
+  const [capsules, setCapsules] = useState<Capsule[]>([]);
+  const [userStats, setUserStats] = useState<UserStats>({
     capsules_created: 0,
     memories_stored: 0,
     days_preserved: 0,
     total_points: 0
   });
-  const [achievements, setAchievements] = useState([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -77,13 +100,23 @@ export default function Dashboard() {
           if (insertError) {
             console.error('Error creating user stats:', insertError);
           } else if (newStats) {
-            setUserStats(newStats);
+            setUserStats({
+              capsules_created: newStats.capsules_created || 0,
+              memories_stored: newStats.memories_stored || 0,
+              days_preserved: newStats.days_preserved || 0,
+              total_points: newStats.total_points || 0
+            });
           }
         } else {
           console.error('Error fetching user stats:', statsError);
         }
       } else if (statsData) {
-        setUserStats(statsData);
+        setUserStats({
+          capsules_created: statsData.capsules_created || 0,
+          memories_stored: statsData.memories_stored || 0,
+          days_preserved: statsData.days_preserved || 0,
+          total_points: statsData.total_points || 0
+        });
       }
 
       // Fetch recent achievements
@@ -123,7 +156,12 @@ export default function Dashboard() {
       .on('postgres_changes', 
         { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setUserStats(payload.new);
+          setUserStats({
+            capsules_created: payload.new.capsules_created || 0,
+            memories_stored: payload.new.memories_stored || 0,
+            days_preserved: payload.new.days_preserved || 0,
+            total_points: payload.new.total_points || 0
+          });
         }
       )
       .subscribe();

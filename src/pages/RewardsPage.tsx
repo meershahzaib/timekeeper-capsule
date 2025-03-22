@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,20 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const defaultRewards = [
+// Define a type for our rewards to ensure consistency
+type Reward = {
+  title: string;
+  description: string;
+  icon: React.ForwardRefExoticComponent<any>;
+  reward: string;
+  achievement_type: string;
+  points: number;
+  claimed: boolean;
+  progress?: number;
+  maxProgress?: number;
+};
+
+const defaultRewards: Reward[] = [
   {
     title: "First Capsule Created",
     description: "Create your first time capsule",
@@ -56,12 +70,20 @@ const defaultRewards = [
   },
 ];
 
+// Define a type for user stats
+type UserStats = {
+  total_points: number;
+  capsules_created: number;
+  memories_stored: number;
+  days_preserved: number;
+};
+
 export default function RewardsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [rewards, setRewards] = useState(defaultRewards);
-  const [userStats, setUserStats] = useState({
+  const [rewards, setRewards] = useState<Reward[]>(defaultRewards);
+  const [userStats, setUserStats] = useState<UserStats>({
     total_points: 0,
     capsules_created: 0,
     memories_stored: 0,
@@ -98,13 +120,18 @@ export default function RewardsPage() {
       if (statsError && statsError.code !== 'PGRST116') {
         console.error('Error fetching user stats:', statsError);
       } else if (statsData) {
-        setUserStats(statsData);
+        setUserStats({
+          total_points: statsData.total_points || 0,
+          capsules_created: statsData.capsules_created || 0,
+          memories_stored: statsData.memories_stored || 0,
+          days_preserved: statsData.days_preserved || 0
+        });
       }
 
       // Update rewards with user progress
       if (achievementsData) {
         // Create a map of achievement types to their data
-        const achievementMap = {};
+        const achievementMap: Record<string, any> = {};
         achievementsData.forEach(achievement => {
           achievementMap[achievement.achievement_type] = achievement;
         });
@@ -118,7 +145,7 @@ export default function RewardsPage() {
             return {
               ...reward,
               claimed: true,
-              progress: reward.maxProgress,
+              progress: reward.maxProgress || 1,
             };
           }
           
@@ -127,11 +154,11 @@ export default function RewardsPage() {
           if (reward.achievement_type === 'first_capsule') {
             progress = statsData?.capsules_created > 0 ? 1 : 0;
           } else if (reward.achievement_type === 'memory_keeper') {
-            progress = Math.min(statsData?.memories_stored || 0, reward.maxProgress);
+            progress = Math.min(statsData?.memories_stored || 0, reward.maxProgress || 10);
           } else if (reward.achievement_type === 'time_traveler') {
             // Calculate years based on days preserved
             const yearsPreserved = Math.floor((statsData?.days_preserved || 0) / 365);
-            progress = Math.min(yearsPreserved, reward.maxProgress);
+            progress = Math.min(yearsPreserved, reward.maxProgress || 5);
           }
           
           return {
@@ -149,7 +176,7 @@ export default function RewardsPage() {
     fetchData();
 
     // Check for achievement completion when stats change
-    const checkAchievements = async (stats) => {
+    const checkAchievements = async (stats: UserStats) => {
       // First capsule created
       if (stats.capsules_created > 0) {
         const firstReward = rewards.find(r => r.achievement_type === 'first_capsule');
@@ -182,8 +209,14 @@ export default function RewardsPage() {
       .on('postgres_changes', 
         { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setUserStats(payload.new);
-          checkAchievements(payload.new);
+          const newStats: UserStats = {
+            total_points: payload.new.total_points || 0,
+            capsules_created: payload.new.capsules_created || 0,
+            memories_stored: payload.new.memories_stored || 0,
+            days_preserved: payload.new.days_preserved || 0
+          };
+          setUserStats(newStats);
+          checkAchievements(newStats);
         }
       )
       .subscribe();
@@ -197,7 +230,7 @@ export default function RewardsPage() {
           // Update the reward with the matching achievement type
           setRewards(prevRewards => prevRewards.map(reward => 
             reward.achievement_type === payload.new.achievement_type
-              ? { ...reward, claimed: true, progress: reward.maxProgress }
+              ? { ...reward, claimed: true, progress: reward.maxProgress || 1 }
               : reward
           ));
         }
@@ -210,7 +243,7 @@ export default function RewardsPage() {
     };
   }, [user, rewards]);
 
-  const awardAchievement = async (achievementType, reward) => {
+  const awardAchievement = async (achievementType: string, reward: Reward) => {
     if (!user) return;
     
     try {
@@ -331,7 +364,7 @@ export default function RewardsPage() {
                       <span>{reward.progress}/{reward.maxProgress}</span>
                     </div>
                     <Progress 
-                      value={(reward.progress / reward.maxProgress) * 100} 
+                      value={(reward.progress || 0) / reward.maxProgress * 100} 
                       className="h-2" 
                     />
                   </div>
