@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,7 +20,10 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2, FileText, Image as ImageIcon, Video } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }).max(100),
@@ -33,7 +37,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function CreateCapsule() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [capsuleId, setCapsuleId] = useState<string | null>(null);
   const [contentFiles, setContentFiles] = useState<{ url: string; type: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,18 +53,27 @@ export default function CreateCapsule() {
     },
   });
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/");
+      toast.error("You must be signed in to create a time capsule");
+    }
+  }, [user, authLoading, navigate]);
+
   const onSubmit = async (values: FormValues) => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to create a time capsule",
-        variant: "destructive"
-      });
+      toast.error("Please sign in to create a time capsule");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Calculate days preserved (for achievements)
+      const currentDate = new Date();
+      const openDate = values.openDate;
+      const daysPreserved = Math.ceil((openDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Create the capsule
       const { data, error } = await supabase
         .from('time_capsules')
         .insert({
@@ -78,30 +91,85 @@ export default function CreateCapsule() {
       setCapsuleId(data.id);
       setActiveTab("content");
       
-      toast({
-        title: "Time capsule created",
-        description: "Now you can add memories to your capsule",
+      // Update user stats
+      const { data: statsData, error: statsError } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (statsError) {
+        if (statsError.code === 'PGRST116') {
+          // Create new stats if they don't exist
+          await supabase
+            .from('user_stats')
+            .insert({
+              user_id: user.id,
+              capsules_created: 1,
+              days_preserved: daysPreserved,
+              memories_stored: 0,
+              total_points: 0
+            });
+        } else {
+          console.error('Error fetching user stats:', statsError);
+        }
+      } else {
+        // Update existing stats
+        await supabase
+          .from('user_stats')
+          .update({
+            capsules_created: statsData.capsules_created + 1,
+            days_preserved: statsData.days_preserved + daysPreserved,
+            last_updated: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      }
+      
+      toast.success("Time capsule created", {
+        description: "Now you can add memories to your capsule"
       });
     } catch (error: any) {
       console.error("Error creating time capsule:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create time capsule. Please try again.",
-        variant: "destructive"
+      toast.error("Failed to create time capsule", {
+        description: error.message || "Please try again"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUploadComplete = (fileUrl: string, fileType: string) => {
+  const handleUploadComplete = async (fileUrl: string, fileType: string) => {
+    if (!capsuleId || !user) return;
+
     setContentFiles([...contentFiles, { url: fileUrl, type: fileType }]);
+
+    try {
+      // Update user stats for memories stored
+      const { data: statsData, error: statsError } = await supabase
+        .from('user_stats')
+        .select('memories_stored')
+        .eq('user_id', user.id)
+        .single();
+
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error('Error fetching user stats:', statsError);
+      } else if (statsData) {
+        await supabase
+          .from('user_stats')
+          .update({
+            memories_stored: statsData.memories_stored + 1,
+            last_updated: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      }
+    } catch (error) {
+      console.error('Error updating user stats:', error);
+    }
   };
 
   const handleFinish = () => {
-    toast({
-      title: "Time capsule saved",
-      description: "Your time capsule has been created successfully!"
+    toast.success("Time capsule saved", {
+      description: "Your memories are now preserved for the future!"
     });
     navigate("/dashboard");
   };
@@ -115,13 +183,13 @@ export default function CreateCapsule() {
   }
 
   if (!user) {
-    navigate("/");
     return null;
   }
 
   return (
-    <div className="container py-20">
-      <div className="max-w-3xl mx-auto">
+    <>
+      <Navbar />
+      <div className="container max-w-3xl py-16 sm:py-20 px-4">
         <h1 className="text-3xl font-bold mb-8">Create a New Time Capsule</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -297,6 +365,7 @@ export default function CreateCapsule() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

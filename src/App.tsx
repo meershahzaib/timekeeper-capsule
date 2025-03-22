@@ -24,7 +24,17 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner position="top-right" closeButton richColors />
+        <Sonner 
+          position="top-right" 
+          closeButton 
+          richColors 
+          expand={true}
+          theme="system"
+          toastOptions={{
+            duration: 4000,
+            className: "my-toast-class",
+          }}
+        />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />

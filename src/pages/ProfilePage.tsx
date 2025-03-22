@@ -1,18 +1,28 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, Calendar, User } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Mail, Calendar, User, Award } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [userStats, setUserStats] = useState({
+    capsules_created: 0,
+    memories_stored: 0,
+    days_preserved: 0,
+    total_points: 0
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -20,6 +30,60 @@ export default function ProfilePage() {
       toast.error("You must be signed in to view this page");
     }
   }, [user, loading, navigate]);
+
+  // Fetch user stats when profile loads
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUserStats = async () => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user stats:', error);
+        return;
+      }
+
+      if (data) {
+        setUserStats(data);
+      } else {
+        // Create user stats if they don't exist
+        const { error: insertError } = await supabase
+          .from('user_stats')
+          .insert({
+            user_id: user.id,
+            capsules_created: 0,
+            memories_stored: 0,
+            days_preserved: 0,
+            total_points: 0
+          });
+
+        if (insertError) {
+          console.error('Error creating user stats:', insertError);
+        }
+      }
+    };
+
+    fetchUserStats();
+
+    // Subscribe to realtime updates
+    const userStatsChannel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setUserStats(payload.new as any);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(userStatsChannel);
+    };
+  }, [user]);
 
   if (loading) {
     return (
@@ -42,7 +106,7 @@ export default function ProfilePage() {
   return (
     <>
       <Navbar />
-      <div className="container max-w-4xl py-24 px-4 sm:px-6">
+      <div className="container max-w-4xl py-16 sm:py-24 px-4 sm:px-6">
         <header className="mb-8">
           <h1 className="text-3xl font-bold">My Profile</h1>
           <p className="text-muted-foreground mt-1">View and manage your profile information</p>
@@ -60,7 +124,7 @@ export default function ProfilePage() {
                 <h2 className="text-xl font-semibold text-center">
                   {user.user_metadata?.username || "User"}
                 </h2>
-                <p className="text-muted-foreground text-center mb-4">{user.email}</p>
+                <p className="text-muted-foreground text-center mb-4 text-sm break-all">{user.email}</p>
                 <Button 
                   variant="outline" 
                   onClick={() => navigate("/settings")} 
@@ -107,23 +171,43 @@ export default function ProfilePage() {
             
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Capsule Statistics</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary" />
+                  Capsule Statistics
+                </CardTitle>
                 <CardDescription>Summary of your time capsule activity</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  <div className="bg-muted/40 p-4 rounded-lg text-center">
-                    <p className="text-2xl font-bold">0</p>
+                  <div className="bg-muted/20 p-4 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{userStats.capsules_created}</p>
                     <p className="text-sm text-muted-foreground">Active Capsules</p>
                   </div>
-                  <div className="bg-muted/40 p-4 rounded-lg text-center">
-                    <p className="text-2xl font-bold">0</p>
+                  <div className="bg-muted/20 p-4 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{userStats.memories_stored}</p>
                     <p className="text-sm text-muted-foreground">Memories Stored</p>
                   </div>
-                  <div className="bg-muted/40 p-4 rounded-lg text-center">
-                    <p className="text-2xl font-bold">0</p>
+                  <div className="bg-muted/20 p-4 rounded-lg text-center">
+                    <p className="text-2xl font-bold">{userStats.days_preserved}</p>
                     <p className="text-sm text-muted-foreground">Days Preserved</p>
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Rewards Points</span>
+                    <span className="text-sm text-muted-foreground">{userStats.total_points}/1000</span>
+                  </div>
+                  <Progress value={(userStats.total_points / 1000) * 100} className="h-2 mb-4" />
+                  <p className="text-sm text-muted-foreground text-center">
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-sm" 
+                      onClick={() => navigate("/rewards")}
+                    >
+                      View your achievements
+                    </Button>
+                  </p>
                 </div>
               </CardContent>
             </Card>

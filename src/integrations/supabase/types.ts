@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          created_at: string
+          description: string
+          earned_at: string | null
+          id: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          created_at?: string
+          description: string
+          earned_at?: string | null
+          id?: string
+          points?: number
+          user_id: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          created_at?: string
+          description?: string
+          earned_at?: string | null
+          id?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       capsule_contents: {
         Row: {
           capsule_id: string
@@ -100,6 +133,36 @@ export type Database = {
           scheduled_open_date?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          capsules_created: number
+          days_preserved: number
+          id: string
+          last_updated: string
+          memories_stored: number
+          total_points: number
+          user_id: string
+        }
+        Insert: {
+          capsules_created?: number
+          days_preserved?: number
+          id?: string
+          last_updated?: string
+          memories_stored?: number
+          total_points?: number
+          user_id: string
+        }
+        Update: {
+          capsules_created?: number
+          days_preserved?: number
+          id?: string
+          last_updated?: string
+          memories_stored?: number
+          total_points?: number
           user_id?: string
         }
         Relationships: []
