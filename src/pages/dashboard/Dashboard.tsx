@@ -24,6 +24,11 @@ type Capsule = {
   id: string;
   title: string;
   created_at: string;
+  description?: string;
+  scheduled_open_date?: string;
+  is_private?: boolean;
+  user_id?: string;
+  updated_at?: string;
   [key: string]: any;
 };
 
@@ -32,6 +37,10 @@ type Achievement = {
   achievement_name: string;
   points: number;
   earned_at: string;
+  description?: string;
+  achievement_type?: string;
+  user_id?: string;
+  created_at?: string;
   [key: string]: any;
 };
 
@@ -145,7 +154,7 @@ export default function Dashboard() {
         { event: '*', schema: 'public', table: 'time_capsules', filter: `user_id=eq.${user.id}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setCapsules(prevCapsules => [payload.new, ...prevCapsules]);
+            setCapsules(prevCapsules => [payload.new as Capsule, ...prevCapsules]);
           }
         }
       )
@@ -156,12 +165,14 @@ export default function Dashboard() {
       .on('postgres_changes', 
         { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setUserStats({
-            capsules_created: payload.new.capsules_created || 0,
-            memories_stored: payload.new.memories_stored || 0,
-            days_preserved: payload.new.days_preserved || 0,
-            total_points: payload.new.total_points || 0
-          });
+          if (payload.new) {
+            setUserStats({
+              capsules_created: payload.new.capsules_created || 0,
+              memories_stored: payload.new.memories_stored || 0,
+              days_preserved: payload.new.days_preserved || 0,
+              total_points: payload.new.total_points || 0
+            });
+          }
         }
       )
       .subscribe();
@@ -177,7 +188,7 @@ export default function Dashboard() {
           });
           
           setAchievements(prevAchievements => 
-            [payload.new, ...prevAchievements].slice(0, 3)
+            [payload.new as Achievement, ...prevAchievements].slice(0, 3)
           );
         }
       )
@@ -264,7 +275,7 @@ export default function Dashboard() {
             <CardContent>
               {capsules.length > 0 ? (
                 <div className="space-y-4">
-                  {capsules.slice(0, 3).map((capsule: any) => (
+                  {capsules.slice(0, 3).map((capsule: Capsule) => (
                     <div key={capsule.id} className="flex items-center justify-between border-b pb-3">
                       <div className="flex items-start gap-3">
                         <div className="bg-primary/10 p-2 rounded-full">
